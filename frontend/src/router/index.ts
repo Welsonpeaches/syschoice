@@ -11,6 +11,11 @@ export const router = createRouter({
       name: 'hardware',
       component: () => import('@/views/HardwareView.vue'),
     },
+    {
+      path: '/test/interview',
+      name: 'interview',
+      component: () => import('@/views/InterviewView.vue'),
+    },
     { path: '/test/quiz', name: 'quiz', component: () => import('@/views/QuizView.vue') },
     { path: '/test/lab', name: 'lab', component: () => import('@/views/LabView.vue') },
     {
@@ -30,7 +35,9 @@ export const router = createRouter({
 router.beforeEach((to) => {
   const store = useAssessmentStore()
   // Hardware detection itself is skippable, but the step must be visited first.
-  if (to.name === 'quiz' && !store.hardwareVisited) return { name: 'hardware' }
+  if (['interview', 'quiz'].includes(String(to.name)) && !store.hardwareVisited) {
+    return { name: 'hardware' }
+  }
   if (to.name === 'lab' && !store.quizComplete) return { name: 'quiz' }
   return true
 })

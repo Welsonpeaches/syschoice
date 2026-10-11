@@ -138,6 +138,22 @@ export interface AssessResult {
   full: CandidateEntry[]
   families: FamilySummary[]
   requiredSoftware: string[]
+  evidenceNotes?: string[]
+}
+
+export interface InterviewEvidence {
+  traits: Record<string, number>
+  device: string | null
+  dimensionWeights: Record<string, number>
+  dimensionTargets: Record<string, number>
+  software: string[]
+  notes: string[]
+}
+
+export interface InterviewResponse {
+  evidence: InterviewEvidence
+  followups: string[]
+  model: string
 }
 
 export interface Feedback {
@@ -173,6 +189,7 @@ export interface AssessPayload {
   cli: Record<string, string>
   software: string[]
   hardware: HardwareReading
+  interview?: InterviewEvidence[]
   durationMs?: number
 }
 

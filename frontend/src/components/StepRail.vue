@@ -9,6 +9,7 @@ const router = useRouter()
 
 const steps = [
   { name: 'hardware', label: 'step.hardware' },
+  { name: 'interview', label: 'step.interview' },
   { name: 'quiz', label: 'step.quiz' },
   { name: 'lab', label: 'step.lab' },
   { name: 'result', label: 'step.result' },

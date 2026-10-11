@@ -13,6 +13,7 @@ from ..data.dimensions import DIMENSION_IDS
 from ..data.questions import QUESTIONS, QUESTION_MAP, TRAIT_DEFAULTS
 from ..data.scenarios import SCENARIO_MAP
 from ..data.software import SOFTWARE_MAP
+from .evidence import merge_evidence
 
 # How usable a family is for a piece of software, on a 0-1 scale.
 COMPAT_SCORE = {
@@ -30,6 +31,9 @@ MIN_DIM_WEIGHT = 0.03
 # An option may state a desired value for a dimension without declaring how much
 # it matters; that gets a light weight instead of silently skewing the average.
 DEFAULT_D_VALUE_WEIGHT = 0.15
+
+# When the interview states a target without stating how much it matters.
+EVIDENCE_TARGET_WEIGHT = 0.45
 
 
 def _blank_vector():
@@ -116,6 +120,9 @@ def build_profile(payload):
 
     apply_hardware(traits, weights, payload.get("hardware") or {})
 
+    evidence = merge_evidence(payload.get("interview"))
+    apply_evidence(evidence, weights, desired_sum, traits)
+
     user_vector = {}
     for dim in DIMENSION_IDS:
         total_weight = weights[dim]
@@ -133,6 +140,7 @@ def build_profile(payload):
         "dims": user_vector,
         "weights": final_weights,
         "traits": traits,
+        "evidence": evidence,
     }
 
 
@@ -160,6 +168,26 @@ def apply_hardware(traits, weights, hardware):
     platform = str(hardware.get("platform") or "")
     if "Mac" in platform:
         traits["apple_ecosystem"] = max(traits.get("apple_ecosystem", 0.0), 0.6)
+
+
+def apply_evidence(evidence, weights, desired, traits):
+    """Fold interview evidence into the model the questionnaire builds.
+
+    Traits come from the person's own words, so they override form defaults;
+    dimension importance stacks additively, exactly like answers do.
+    """
+    if not evidence:
+        return
+
+    for key, value in evidence["traits"].items():
+        traits[key] = value
+    if evidence["device"]:
+        traits["device"] = evidence["device"]
+
+    for dim, target in evidence["dimensionTargets"].items():
+        dim_weight = evidence["dimensionWeights"].get(dim, EVIDENCE_TARGET_WEIGHT)
+        weights[dim] = weights.get(dim, 0.0) + dim_weight
+        desired[dim] = desired.get(dim, 0.0) + dim_weight * target
 
 
 def _gate_multiplier(candidate, traits):
@@ -337,6 +365,7 @@ def build_result(payload):
             "values": [profile["dims"][d] for d in DIMENSION_IDS],
         },
         "profile": profile,
+        "evidenceNotes": profile["evidence"]["notes"],
         "top": entries[:3],
         "full": entries,
         "families": family_summary(ranked),

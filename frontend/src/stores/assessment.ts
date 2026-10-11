@@ -6,6 +6,7 @@ import type {
   AssessResult,
   CatalogResponse,
   HardwareReading,
+  InterviewEvidence,
   QuizResponse,
 } from '@/api/types'
 
@@ -40,6 +41,12 @@ export const useAssessmentStore = defineStore('assessment', () => {
   const hardware = ref<HardwareReading>({})
   // Steps are order-guarded, so the hardware step records that it was seen.
   const hardwareVisited = ref(false)
+
+  // Evidence extracted from the optional free-form interview. It rides along
+  // with the assessment and is merged into the same model as the answers.
+  const interview = ref<InterviewEvidence[]>([])
+  const interviewText = ref('')
+  const followups = ref<string[]>([])
 
   const result = ref<AssessResult | null>(null)
   const history = ref<HistoryEntry[]>(loadHistory())
@@ -122,6 +129,20 @@ export const useAssessmentStore = defineStore('assessment', () => {
     hardwareVisited.value = true
   }
 
+  function addEvidence(evidence: InterviewEvidence) {
+    interview.value = [...interview.value, evidence]
+  }
+
+  function clearInterview() {
+    interview.value = []
+    interviewText.value = ''
+    followups.value = []
+  }
+
+  const interviewNotes = computed(() =>
+    interview.value.flatMap((item) => item.notes ?? []),
+  )
+
   function rememberResult(data: AssessResult) {
     const entry: HistoryEntry = {
       shareCode: data.shareCode,
@@ -147,6 +168,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
         cli: cli.value,
         software: software.value,
         hardware: hardware.value,
+        interview: interview.value,
         durationMs: startedAt.value ? Date.now() - startedAt.value : undefined,
       })
       result.value = data
@@ -181,6 +203,7 @@ export const useAssessmentStore = defineStore('assessment', () => {
     scenarios.value = {}
     result.value = null
     startedAt.value = null
+    clearInterview()
   }
 
   return {
@@ -194,6 +217,10 @@ export const useAssessmentStore = defineStore('assessment', () => {
     scenarios,
     hardware,
     hardwareVisited,
+    interview,
+    interviewText,
+    followups,
+    interviewNotes,
     result,
     history,
     questions,
@@ -210,6 +237,8 @@ export const useAssessmentStore = defineStore('assessment', () => {
     setScenario,
     toggleSoftware,
     setHardware,
+    addEvidence,
+    clearInterview,
     submit,
     loadResult,
     reset,

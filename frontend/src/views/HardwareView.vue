@@ -43,12 +43,12 @@ onMounted(() => {
 
 function next() {
   store.setHardware(reading.value as HardwareReading)
-  router.push({ name: 'quiz' })
+  router.push({ name: 'interview' })
 }
 
 function skip() {
   store.setHardware({ source: 'skipped' })
-  router.push({ name: 'quiz' })
+  router.push({ name: 'interview' })
 }
 </script>
 

@@ -30,6 +30,7 @@ from ..db import (
     stats,
 )
 from ..services import llm
+from ..services.evidence import sanitize_evidence
 from ..services.scoring import build_result
 
 public_bp = Blueprint("public", __name__, url_prefix="/api")
@@ -162,6 +163,7 @@ def assess():
         "cli": body.get("cli") or {},
         "software": body.get("software") or [],
         "hardware": body.get("hardware") or {},
+        "interview": body.get("interview") or [],
     })
 
     hardware = _clean_hardware(body.get("hardware"))
@@ -309,3 +311,45 @@ def public_stats():
     data["familyLabels"] = FAMILY_LABELS
     data["familyColors"] = FAMILY_COLORS
     return jsonify(data)
+
+
+MAX_INTERVIEW_CHARS = 2000
+
+
+@public_bp.post("/interview")
+def interview():
+    """Turn free-form answers into structured evidence plus follow-up questions."""
+    ip = _client_ip()
+    if _rate_limited(ip):
+        return jsonify({"error": "请求过于频繁，请稍后再试。"}), 429
+    if not llm.is_enabled():
+        return jsonify({"error": "服务端未配置 LLM API Key，本功能未启用。"}), 503
+
+    body = request.get_json(silent=True) or {}
+    text = body.get("text")
+    if not isinstance(text, str) or not text.strip():
+        return jsonify({"error": "请先用一段话描述你的情况。"}), 400
+    text = text.strip()[:MAX_INTERVIEW_CHARS]
+
+    history = []
+    for turn in body.get("history") or []:
+        if not isinstance(turn, dict):
+            continue
+        question = turn.get("question")
+        answer = turn.get("answer")
+        if isinstance(question, str) and isinstance(answer, str) and answer.strip():
+            history.append({
+                "question": question[:300],
+                "answer": answer.strip()[:MAX_INTERVIEW_CHARS],
+            })
+
+    try:
+        raw = llm.run_interview(text, history)
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 502
+
+    return jsonify({
+        "evidence": sanitize_evidence(raw),
+        "followups": raw.get("followups") or [],
+        "model": current_app.config.get("LLM_MODEL", Config.LLM_MODEL),
+    })

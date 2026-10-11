@@ -47,6 +47,20 @@ test('start page renders the probe readout and no marketing filler', async ({ pa
   await page.screenshot({ path: `${SHOTS}/start.png`, fullPage: true })
 })
 
+test('interview step explains itself when the model is unavailable', async ({ page }) => {
+  await page.goto('/test/interview')
+  // The guard sends an unvisited session back to the hardware step first.
+  await expect(page).toHaveURL(/\/test\/hardware/)
+  await page.getByRole('button', { name: '跳过这一步' }).click()
+  await waitForView(page, 'interview')
+
+  // Without a key the step still lets the person write, and always lets them
+  // move on rather than trapping them.
+  await expect(page.getByText('用自己的话描述一下')).toBeVisible()
+  await expect(page.getByRole('button', { name: '跳过这一步' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '让模型帮我梳理' })).toBeDisabled()
+})
+
 test('completes the full assessment and produces a shareable result', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: '开始检测' }).first().click()
@@ -55,6 +69,13 @@ test('completes the full assessment and produces a shareable result', async ({ p
   await waitForView(page, 'hardware')
   await page.screenshot({ path: `${SHOTS}/hardware.png`, fullPage: true })
   await page.getByRole('button', { name: '下一步' }).click()
+
+  // The interview step is optional; without an LLM key it is pure form-free
+  // text plus a skip, and the questionnaire must still work.
+  await expect(page).toHaveURL(/\/test\/interview/)
+  await waitForView(page, 'interview')
+  await page.screenshot({ path: `${SHOTS}/interview.png`, fullPage: true })
+  await page.getByRole('button', { name: '跳过这一步' }).click()
 
   await expect(page).toHaveURL(/\/test\/quiz/)
   await waitForView(page, 'quiz')

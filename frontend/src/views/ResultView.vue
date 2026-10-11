@@ -126,6 +126,25 @@ function restart() {
         </div>
         <p class="mt-5 max-w-[62ch] text-[15px] leading-relaxed">{{ champion.blurb }}</p>
 
+        <div
+          v-if="result.evidenceNotes?.length"
+          class="mt-4 rounded-card border border-flux bg-flux-soft p-3"
+        >
+          <p class="text-[12px] font-semibold text-flux-deep">
+            {{ t('result.interviewUsed') }}
+          </p>
+          <ul class="mt-1.5 space-y-1">
+            <li
+              v-for="note in result.evidenceNotes"
+              :key="note"
+              class="flex gap-2 text-[12px] text-flux-deep"
+            >
+              <span class="mt-[7px] h-[5px] w-[5px] shrink-0 rounded-full bg-flux" />
+              {{ note }}
+            </li>
+          </ul>
+        </div>
+
         <div class="mt-6 flex flex-wrap gap-3">
           <button type="button" class="btn-primary" @click="copyLink">
             <Copy :size="15" />

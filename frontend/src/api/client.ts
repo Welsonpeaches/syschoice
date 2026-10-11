@@ -5,6 +5,7 @@ import type {
   CatalogResponse,
   Feedback,
   InsightResponse,
+  InterviewResponse,
   QuizResponse,
   StatsResponse,
 } from './types'
@@ -50,6 +51,11 @@ export const api = {
   catalog: () => request<CatalogResponse>('/catalog'),
   assess: (payload: AssessPayload) =>
     request<AssessResult>('/assess', { method: 'POST', body: JSON.stringify(payload) }),
+  interview: (text: string, history: { question: string; answer: string }[]) =>
+    request<InterviewResponse>('/interview', {
+      method: 'POST',
+      body: JSON.stringify({ text, history }),
+    }),
   result: (code: string) => request<AssessResult>(`/result/${code}`),
   insight: (code: string) =>
     request<InsightResponse>(`/result/${code}/insight`, { method: 'POST' }),

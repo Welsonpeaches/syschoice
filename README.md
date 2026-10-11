@@ -72,6 +72,32 @@ cd ../backend && .venv/bin/python run.py
 | `SYSCHOICE_HOST` | `::` | 后端监听地址，`::` 为 IPv4/IPv6 双栈 |
 | `VITE_DEV_HOST` | `::` | 前端开发服务器监听地址 |
 
+## 可选：让模型参与测试
+
+固定问卷的分辨率有限，所以流程里加了一步**补充描述**（`/test/interview`）：用户用自己的话
+说一遍情况，模型把它翻成结构化证据，并追问 2 到 3 个最可能改变结果的问题。
+
+这里有一条硬性边界：**模型不参与打分**。它只能填下面这个形状，且服务端会按白名单逐项校验，
+模型编出来的键和值在进入打分器之前就被丢掉：
+
+```json
+{
+  "traits": { "gaming_intensity": 0.9 },
+  "device": "laptop",
+  "dimensionWeights": { "gaming": 0.9 },
+  "dimensionTargets": { "gaming": 92 },
+  "software": ["steam", "aaa-games"],
+  "notes": ["用户说主要打游戏、也剪视频"]
+}
+```
+
+证据合并规则：`traits` 覆盖表单默认值（用户的原话比勾选更明确），维度权重做加法并封顶，
+`software` 取并集，`notes` 会原样显示在结果页上，让你知道模型是从哪句话读出来的。
+排名仍然由确定性打分器计算，所以每条推荐依旧带得出维度级的理由。
+
+接口：`POST /api/interview`，入参 `{text, history:[{question, answer}]}`，
+返回 `{evidence, followups, model}`。没配 key 时返回 `503`，前端这一步会显示说明并允许跳过。
+
 ## 可选：接入模型写点评
 
 结果页支持一段由模型撰写的说明。**默认关闭**；不配置时结果页完全正常，只是少一个面板。

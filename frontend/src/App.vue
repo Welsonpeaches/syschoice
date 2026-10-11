@@ -9,7 +9,9 @@ import { useAssessmentStore } from '@/stores/assessment'
 const route = useRoute()
 const store = useAssessmentStore()
 
-const showRail = computed(() => ['hardware', 'quiz', 'lab'].includes(String(route.name)))
+const showRail = computed(() =>
+  ['hardware', 'interview', 'quiz', 'lab'].includes(String(route.name)),
+)
 
 // The questionnaire and catalog are static, so fetch them once up front and
 // every step transition is instant.
