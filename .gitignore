@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Local database and runtime artefacts
+backend/data/*.db
+backend/data/*.db-wal
+backend/data/*.db-shm
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+
+# Editors and OS noise
+.DS_Store
+.idea/
+.vscode/

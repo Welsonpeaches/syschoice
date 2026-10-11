@@ -1,0 +1,25 @@
+[project]
+name = "syschoice-backend"
+version = "1.0.0"
+description = "操作系统选择助手后端 (Flask + SQLite)"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.1",
+    "flask-cors>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app", "app.data", "app.services", "app.api"]

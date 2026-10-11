@@ -1,0 +1,125 @@
+@import 'tailwindcss';
+
+/*
+  Visual direction: the language of an operating-system installer / partitioner.
+  Quiet paper-grey ground, ink text, one verdigris accent, hairline rules and
+  monospace reserved for real machine values (cores, GB, command lines).
+*/
+@theme {
+  --color-paper: #f0f1ee;
+  --color-paper-2: #e7e9e3;
+  --color-ink: #12161a;
+  --color-graphite: #5a636b;
+  --color-line: #d3d7d2;
+  --color-line-strong: #b4bbb4;
+  --color-flux: #2f6b5e;
+  --color-flux-deep: #1f4a41;
+  --color-flux-soft: #dde8e3;
+  --color-alert: #9c4a1b;
+  --color-alert-soft: #f0e2d6;
+
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    letter-spacing: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.2;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  button {
+    font-family: inherit;
+    letter-spacing: 0;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-flux);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Structural rule used across pages instead of cards. */
+  .rule {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .mono-value {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--color-flux);
+    color: #fff;
+    border: 1px solid var(--color-flux-deep);
+    padding: 0.7rem 1.35rem;
+    font-weight: 500;
+    transition: background-color 140ms ease;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-flux-deep);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn-quiet {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    color: var(--color-ink);
+    border: 1px solid var(--color-line-strong);
+    padding: 0.6rem 1.1rem;
+    font-weight: 500;
+    transition: border-color 140ms ease, background-color 140ms ease;
+  }
+
+  .btn-quiet:hover:not(:disabled) {
+    border-color: var(--color-ink);
+    background-color: var(--color-paper-2);
+  }
+
+  .field-input {
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--color-line-strong);
+    padding: 0.55rem 0.75rem;
+    font-family: var(--font-mono);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
