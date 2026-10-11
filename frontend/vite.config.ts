@@ -12,7 +12,9 @@ export default defineConfig({
     },
   },
   server: {
-    host: '127.0.0.1',
+    // '::' binds dual-stack on Linux, so both http://127.0.0.1:5173 and
+    // http://[::1]:5173 work. Override with VITE_DEV_HOST to restrict it.
+    host: process.env.VITE_DEV_HOST ?? '::',
     port: 5173,
     proxy: {
       '/api': {

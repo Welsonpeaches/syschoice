@@ -8,7 +8,7 @@ import secrets
 from flask import Blueprint, Response, current_app, jsonify, request
 
 from ..config import Config
-from ..db import all_sessions_for_export, list_sessions
+from ..db import all_feedback, all_sessions_for_export, list_sessions
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
@@ -60,6 +60,7 @@ CSV_COLUMNS = [
     "top1_name", "top1_family", "top1_group", "top1_match",
     "top2_name", "top2_family", "top2_match",
     "top3_name", "top3_family", "top3_match",
+    "chosen_name", "satisfaction", "feedback_note",
     "hardware_json", "answers_json",
 ]
 
@@ -69,9 +70,12 @@ def export_csv():
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(CSV_COLUMNS)
+    # Joined in Python so the export stays a single flat file for analysis.
+    feedback = {row["share_code"]: row for row in all_feedback()}
     for row in all_sessions_for_export():
         top = json.loads(row["top_json"] or "[]")
         top = (top + [{}, {}, {}])[:3]
+        given = feedback.get(row["share_code"]) or {}
         writer.writerow([
             row["id"], row["share_code"], row["quiz_version"], row["created_at"],
             row["duration_ms"], row["top1_name"], row["top1_family"],
@@ -79,6 +83,7 @@ def export_csv():
             top[0].get("name"), top[0].get("family"), top[0].get("match"),
             top[1].get("name"), top[1].get("family"), top[1].get("match"),
             top[2].get("name"), top[2].get("family"), top[2].get("match"),
+            given.get("chosen_name"), given.get("satisfaction"), given.get("note"),
             row["hardware_json"], row["answers_json"],
         ])
     return Response(

@@ -107,9 +107,9 @@ onBeforeUnmount(() => {
     </p>
 
     <template v-else-if="stats">
-      <dl class="mt-6 grid gap-6 border-y border-line py-6 sm:grid-cols-3">
+      <dl class="band mt-6 grid gap-6 p-6 sm:grid-cols-3">
         <div v-for="item in summary" :key="item.label">
-          <dt class="mono-value text-[28px] font-medium">{{ item.value }}</dt>
+          <dt class="mono-value text-[30px] font-medium leading-none">{{ item.value }}</dt>
           <dd class="text-[12px] text-graphite">{{ item.label }}</dd>
         </div>
       </dl>
@@ -118,39 +118,45 @@ onBeforeUnmount(() => {
         {{ t('common.empty') }}
       </div>
 
-      <div v-else class="mt-8 grid gap-10 lg:grid-cols-2">
-        <div>
+      <div v-else class="mt-6 grid gap-6 lg:grid-cols-2">
+        <div class="panel p-5">
           <h2 class="text-[13px] font-semibold">{{ t('stats.byFamily') }}</h2>
           <ul class="mt-3">
-            <li v-for="row in familyRows" :key="row.family" class="border-t border-line py-3">
+            <li v-for="row in familyRows" :key="row.family" class="py-3">
               <div class="flex items-baseline justify-between gap-3">
-                <span class="text-[13px]">{{ row.label }}</span>
+                <span class="flex items-center gap-2 text-[13px]">
+                  <span class="h-2.5 w-2.5 rounded-sm" :style="{ backgroundColor: row.color }" />
+                  {{ row.label }}
+                </span>
                 <span class="mono-value text-[12px] text-graphite">
                   {{ row.count }} · {{ row.share }}%
                 </span>
               </div>
-              <div class="mt-2 h-[6px] w-full bg-paper-2">
-                <div class="h-full" :style="{ width: `${row.share}%`, backgroundColor: row.color }" />
+              <div class="mt-2 h-[6px] w-full overflow-hidden rounded-full bg-paper-2">
+                <div
+                  class="h-full rounded-full transition-[width] duration-500"
+                  :style="{ width: `${row.share}%`, backgroundColor: row.color }"
+                />
               </div>
             </li>
           </ul>
         </div>
 
-        <div>
+        <div class="panel p-5">
           <h2 class="text-[13px] font-semibold">{{ t('stats.topCandidates') }}</h2>
           <ul class="mt-3">
             <li
               v-for="item in stats.topCandidates"
               :key="item.id"
-              class="flex items-center gap-3 border-t border-line py-2.5"
+              class="flex items-center gap-3 border-t border-line py-2.5 first:border-t-0"
             >
               <span class="min-w-0 flex-1 truncate text-[13px]">{{ item.name }}</span>
               <span class="mono-value hidden shrink-0 text-[11px] text-graphite sm:inline">
                 {{ stats.familyLabels[item.family] ?? item.family }}
               </span>
-              <span class="h-[6px] w-20 shrink-0 bg-paper-2">
+              <span class="h-[6px] w-20 shrink-0 overflow-hidden rounded-full bg-paper-2">
                 <span
-                  class="block h-full bg-flux"
+                  class="block h-full rounded-full bg-flux"
                   :style="{ width: `${(item.count / maxTopCount) * 100}%` }"
                 />
               </span>
@@ -159,7 +165,7 @@ onBeforeUnmount(() => {
           </ul>
         </div>
 
-        <div class="lg:col-span-2">
+        <div class="panel p-5 lg:col-span-2">
           <h2 class="text-[13px] font-semibold">{{ t('stats.daily') }}</h2>
           <div ref="chartHost" class="mt-3 h-[220px] w-full" />
         </div>

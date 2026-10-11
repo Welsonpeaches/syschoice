@@ -53,16 +53,16 @@ function skip() {
 </script>
 
 <template>
-  <section>
+  <section data-view="hardware">
     <h1 class="text-[22px] font-semibold">{{ t('hardware.title') }}</h1>
     <p class="mt-2 max-w-[60ch] text-[14px] text-graphite">{{ t('hardware.desc') }}</p>
 
-    <div class="mt-7 border border-line bg-white/60">
+    <div class="panel mt-7 overflow-hidden">
       <ul>
         <li
           v-for="row in rows"
           :key="row.label"
-          class="flex items-center justify-between gap-6 border-b border-line px-4 py-3 last:border-b-0"
+          class="flex items-center justify-between gap-6 border-b border-line px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-2"
         >
           <span class="text-[13px] text-graphite">{{ row.label }}</span>
           <span

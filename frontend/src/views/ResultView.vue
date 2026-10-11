@@ -6,6 +6,8 @@ import { useRouter } from 'vue-router'
 import type { CandidateEntry } from '@/api/types'
 import MatchBar from '@/components/MatchBar.vue'
 import RadarChart from '@/components/RadarChart.vue'
+import ResultExtras from '@/components/ResultExtras.vue'
+import SystemLogo from '@/components/SystemLogo.vue'
 import { t } from '@/i18n'
 import { useAssessmentStore } from '@/stores/assessment'
 
@@ -93,49 +95,73 @@ function restart() {
 
   <div v-else>
     <!-- The verdict is the loudest thing on the page; everything else stays quiet. -->
-    <section v-if="champion" class="border-b border-line pb-8">
-      <p class="mono-value text-[11px] text-graphite">{{ t('result.title') }}</p>
-      <div class="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <h1 class="text-[32px] font-semibold sm:text-[38px]">{{ champion.name }}</h1>
-        <span class="mono-value text-[26px] font-medium text-flux">{{ champion.match }}%</span>
-      </div>
-      <p class="mt-1.5 text-[13px] text-graphite">
-        {{ champion.familyLabel }} · {{ champion.group }}
-        <template v-if="champion.lineage"> · 血统 {{ champion.lineage }}</template>
-      </p>
-      <p class="mt-4 max-w-[62ch] text-[15px] leading-relaxed">{{ champion.blurb }}</p>
+    <section v-if="champion" class="band overflow-hidden">
+      <div class="h-1.5 w-full" :style="{ backgroundColor: champion.color }" />
+      <div class="p-6 sm:p-7">
+        <p class="mono-value text-[11px] tracking-normal text-graphite">{{ t('result.title') }}</p>
+        <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-4">
+          <SystemLogo
+            :id="champion.id"
+            :color="champion.color"
+            :monogram="champion.monogram"
+            :size="56"
+            :radius="10"
+          />
+          <div class="min-w-0">
+            <h1 class="text-[32px] font-semibold leading-tight sm:text-[40px]">
+              {{ champion.name }}
+            </h1>
+            <p class="mt-1.5 flex flex-wrap items-center gap-2 text-[12px] text-graphite">
+              <span class="pill">{{ champion.familyLabel }}</span>
+              <span class="pill">{{ champion.group }}</span>
+              <span v-if="champion.lineage" class="pill">血统 {{ champion.lineage }}</span>
+            </p>
+          </div>
+          <div class="ml-auto text-right">
+            <p class="mono-value text-[38px] font-medium leading-none text-flux">
+              {{ champion.match }}<span class="text-[20px]">%</span>
+            </p>
+            <p class="mt-1 text-[11px] text-graphite">综合匹配度</p>
+          </div>
+        </div>
+        <p class="mt-5 max-w-[62ch] text-[15px] leading-relaxed">{{ champion.blurb }}</p>
 
-      <div class="mt-6 flex flex-wrap gap-3">
-        <button type="button" class="btn-quiet" @click="copyLink">
-          <Copy :size="15" />
-          {{ copied ? t('result.copied') : t('result.share') }}
-        </button>
-        <button type="button" class="btn-quiet" @click="restart">
-          <RotateCcw :size="15" />
-          {{ t('result.restart') }}
-        </button>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <button type="button" class="btn-primary" @click="copyLink">
+            <Copy :size="15" />
+            {{ copied ? t('result.copied') : t('result.share') }}
+          </button>
+          <button type="button" class="btn-quiet" @click="restart">
+            <RotateCcw :size="15" />
+            {{ t('result.restart') }}
+          </button>
+        </div>
       </div>
     </section>
 
     <section class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div>
         <h2 class="text-[13px] font-semibold">{{ t('result.top') }}</h2>
-        <ol class="mt-3 border-t border-line">
+        <ol class="mt-3 space-y-3">
           <li
             v-for="entry in result.top"
             :key="entry.id"
-            class="border-b border-line py-5"
+            class="panel p-4 transition-shadow duration-150 hover:shadow-lift sm:p-5"
+            :class="entry.rank === 1 ? 'ring-1 ring-flux/25' : ''"
           >
             <div class="flex items-start gap-4">
-              <span class="mono-value w-5 shrink-0 pt-1 text-[15px] text-graphite">
+              <span
+                class="mono-value flex h-7 w-7 shrink-0 items-center justify-center rounded-card text-[13px] font-semibold text-white"
+                :style="{ backgroundColor: entry.familyColor }"
+              >
                 {{ entry.rank }}
               </span>
-              <span
-                class="flex h-9 w-9 shrink-0 items-center justify-center border text-[13px] font-semibold text-white"
-                :style="{ backgroundColor: entry.color, borderColor: entry.color }"
-              >
-                {{ entry.monogram || '•' }}
-              </span>
+              <SystemLogo
+                :id="entry.id"
+                :color="entry.color"
+                :monogram="entry.monogram"
+                :size="40"
+              />
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-baseline justify-between gap-x-4">
                   <h3 class="text-[17px] font-semibold">{{ entry.name }}</h3>
@@ -148,7 +174,10 @@ function restart() {
                 <div class="mt-3"><MatchBar :value="entry.match" :color="entry.color" /></div>
                 <p class="mt-3 text-[13px] leading-relaxed text-graphite">{{ entry.blurb }}</p>
 
-                <div v-if="entry.rank === 1 && entry.notes.length" class="mt-4">
+                <div
+                  v-if="entry.notes.length"
+                  class="mt-4 rounded-card border border-line bg-surface-2/70 p-3"
+                >
                   <h4 class="text-[12px] font-semibold">{{ t('result.why') }}</h4>
                   <ul class="mt-2 space-y-1.5">
                     <li
@@ -172,8 +201,8 @@ function restart() {
         </ol>
       </div>
 
-      <aside class="space-y-8">
-        <div>
+      <aside class="space-y-6">
+        <div class="panel p-4">
           <h2 class="text-[13px] font-semibold">{{ t('result.radar') }}</h2>
           <RadarChart
             class="mt-2"
@@ -181,31 +210,44 @@ function restart() {
             :values="result.radar.values"
             :dimensions="dimensions"
           />
-          <ul class="mt-3 border-t border-line">
+          <ul class="mt-2">
             <li
               v-for="row in dimensionRows"
               :key="row.id"
-              class="flex items-baseline justify-between gap-4 border-b border-line py-1.5"
+              class="flex items-center justify-between gap-4 border-t border-line py-1.5 first:border-t-0"
             >
-              <span class="text-[12px]" :class="row.weight > 0.12 ? 'text-ink' : 'text-graphite'">
+              <span class="text-[12px]" :class="row.weight > 0.12 ? 'text-ink' : 'text-mist'">
                 {{ row.label }}
               </span>
-              <span class="mono-value text-[12px] text-graphite">{{ row.value }}</span>
+              <span class="flex items-center gap-2.5">
+                <span class="h-[5px] w-16 overflow-hidden rounded-full bg-paper-2">
+                  <span
+                    class="block h-full rounded-full bg-flux"
+                    :style="{ width: `${row.value}%` }"
+                  />
+                </span>
+                <span class="mono-value w-8 text-right text-[12px] text-graphite">
+                  {{ row.value }}
+                </span>
+              </span>
             </li>
           </ul>
         </div>
 
-        <div>
+        <div class="panel p-4">
           <h2 class="text-[13px] font-semibold">{{ t('result.families') }}</h2>
           <ul class="mt-3">
-            <li v-for="item in result.families" :key="item.family" class="border-t border-line py-2.5">
+            <li v-for="item in result.families" :key="item.family" class="py-2.5">
               <div class="flex items-baseline justify-between gap-3">
-                <span class="text-[13px]">{{ item.label }}</span>
+                <span class="flex items-center gap-2 text-[13px]">
+                  <span class="h-2.5 w-2.5 rounded-sm" :style="{ backgroundColor: item.color }" />
+                  {{ item.label }}
+                </span>
                 <span class="mono-value text-[12px] text-graphite">{{ item.average }}</span>
               </div>
-              <div class="mt-1.5 h-[5px] w-full bg-paper-2">
+              <div class="mt-2 h-[5px] w-full overflow-hidden rounded-full bg-paper-2">
                 <div
-                  class="h-full"
+                  class="h-full rounded-full"
                   :style="{
                     width: `${(item.average / maxFamilyAverage) * 100}%`,
                     backgroundColor: item.color,
@@ -221,31 +263,40 @@ function restart() {
       </aside>
     </section>
 
-    <section class="mt-10 border-t border-line pt-6">
+    <section class="mt-10">
       <button
         type="button"
-        class="flex items-center gap-2 text-[13px] font-semibold"
+        class="btn-quiet w-full justify-between text-[13px]"
         @click="expanded = !expanded"
       >
-        <ChevronDown :size="16" :class="expanded ? 'rotate-180 transition-transform' : 'transition-transform'" />
-        {{ expanded ? t('result.collapse') : t('result.expand', { n: result.full.length }) }}
+        <span>
+          {{ expanded ? t('result.collapse') : t('result.expand', { n: result.full.length }) }}
+        </span>
+        <ChevronDown
+          :size="16"
+          class="transition-transform duration-200"
+          :class="expanded ? 'rotate-180' : ''"
+        />
       </button>
 
-      <div v-if="expanded" class="mt-6 space-y-8">
+      <div v-if="expanded" class="panel mt-4 space-y-6 p-4">
         <div v-for="bucket in groupedFull" :key="bucket.group">
           <h3 class="text-[12px] font-semibold text-graphite">{{ bucket.group }}</h3>
-          <ul class="mt-2 border-t border-line">
+          <ul class="mt-2">
             <li
               v-for="entry in bucket.entries"
               :key="entry.id"
-              class="flex items-center gap-3 border-b border-line py-2"
+              class="flex items-center gap-3 border-b border-line py-2 last:border-b-0"
             >
               <span class="mono-value w-6 shrink-0 text-right text-[11px] text-graphite">
                 {{ entry.rank }}
               </span>
-              <span
-                class="h-2.5 w-2.5 shrink-0"
-                :style="{ backgroundColor: entry.color }"
+              <SystemLogo
+                :id="entry.id"
+                :color="entry.color"
+                :monogram="entry.monogram"
+                :size="18"
+                :radius="4"
               />
               <span class="min-w-0 flex-1 truncate text-[13px]">{{ entry.name }}</span>
               <span class="mono-value hidden shrink-0 text-[11px] text-graphite sm:inline">
@@ -257,5 +308,7 @@ function restart() {
         </div>
       </div>
     </section>
+
+    <ResultExtras :result="result" />
   </div>
 </template>

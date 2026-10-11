@@ -36,12 +36,31 @@ CREATE TABLE IF NOT EXISTS sessions (
     top1_family     TEXT,
     top1_group      TEXT,
     top1_match      REAL,
-    top_json        TEXT
+    top_json        TEXT,
+    insight_text    TEXT,
+    insight_model   TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions (created_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_top1_family ON sessions (top1_family);
 CREATE INDEX IF NOT EXISTS idx_sessions_top1_id ON sessions (top1_id);
+
+-- What the person actually installed and whether it worked out. This is the
+-- only real label the project can collect, and it is the prerequisite for
+-- ever learning the ranking weights instead of hand-writing them.
+CREATE TABLE IF NOT EXISTS feedback (
+    id           TEXT PRIMARY KEY,
+    share_code   TEXT NOT NULL,
+    created_at   TEXT NOT NULL,
+    chosen_id    TEXT,
+    chosen_name  TEXT,
+    satisfaction INTEGER,
+    note         TEXT,
+    ip_hash      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_share_code ON feedback (share_code);
+CREATE INDEX IF NOT EXISTS idx_feedback_chosen ON feedback (chosen_id);
 """
 
 
@@ -60,6 +79,11 @@ def init_db(db_path=None):
     conn = connect(db_path)
     try:
         conn.executescript(SCHEMA)
+        # Older databases predate the LLM commentary columns.
+        existing = {row["name"] for row in conn.execute("PRAGMA table_info(sessions)")}
+        for column in ("insight_text", "insight_model"):
+            if column not in existing:
+                conn.execute(f"ALTER TABLE sessions ADD COLUMN {column} TEXT")
         conn.commit()
     finally:
         conn.close()
@@ -107,6 +131,66 @@ def get_by_share_code(code, db_path=None):
             "SELECT * FROM sessions WHERE share_code = ?", (code,)
         ).fetchone()
         return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def set_insight(share_code, text, model, db_path=None):
+    conn = connect(db_path)
+    try:
+        conn.execute(
+            "UPDATE sessions SET insight_text = ?, insight_model = ? WHERE share_code = ?",
+            (text, model, share_code),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def insert_feedback(payload, db_path=None):
+    """One row per share code: a later submission replaces the earlier one."""
+    conn = connect(db_path)
+    try:
+        conn.execute("DELETE FROM feedback WHERE share_code = ?", (payload["share_code"],))
+        conn.execute(
+            """
+            INSERT INTO feedback (
+                id, share_code, created_at, chosen_id, chosen_name,
+                satisfaction, note, ip_hash
+            ) VALUES (?,?,?,?,?,?,?,?)
+            """,
+            (
+                payload["id"],
+                payload["share_code"],
+                payload["created_at"],
+                payload.get("chosen_id"),
+                payload.get("chosen_name"),
+                payload.get("satisfaction"),
+                payload.get("note"),
+                payload.get("ip_hash"),
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_feedback(share_code, db_path=None):
+    conn = connect(db_path)
+    try:
+        row = conn.execute(
+            "SELECT * FROM feedback WHERE share_code = ?", (share_code,)
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def all_feedback(db_path=None):
+    conn = connect(db_path)
+    try:
+        rows = conn.execute("SELECT * FROM feedback ORDER BY created_at DESC").fetchall()
+        return [dict(r) for r in rows]
     finally:
         conn.close()
 

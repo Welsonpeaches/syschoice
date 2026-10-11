@@ -124,6 +124,10 @@ export interface AssessResult {
   shareCode: string
   createdAt: string
   quizVersion: string
+  llmEnabled?: boolean
+  insight?: string | null
+  insightModel?: string | null
+  feedback?: Feedback | null
   radar: { labels: string[]; values: number[] }
   profile: {
     dims: Record<string, number>
@@ -134,6 +138,22 @@ export interface AssessResult {
   full: CandidateEntry[]
   families: FamilySummary[]
   requiredSoftware: string[]
+}
+
+export interface Feedback {
+  id: string
+  share_code: string
+  created_at: string
+  chosen_id: string | null
+  chosen_name: string | null
+  satisfaction: number | null
+  note: string | null
+}
+
+export interface InsightResponse {
+  insight: string
+  model: string | null
+  cached: boolean
 }
 
 export interface HardwareReading {

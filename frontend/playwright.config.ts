@@ -12,6 +12,8 @@ export default defineConfig({
     //   E2E_BASE_URL=http://127.0.0.1:5000 npx playwright test
     baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173',
     trace: 'off',
+    // Exercises the reduced-motion path and keeps screenshots deterministic.
+    reducedMotion: 'reduce',
   },
   projects: [
     {

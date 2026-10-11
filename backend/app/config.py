@@ -25,3 +25,10 @@ class Config:
         "SYSCHOICE_CORS_ORIGINS",
         "http://localhost:5173,http://127.0.0.1:5173",
     ).split(",")
+
+    # Optional LLM-written commentary on the result page. Everything works
+    # without it; when no key is configured the feature is simply absent.
+    LLM_API_KEY = os.environ.get("SYSCHOICE_LLM_API_KEY", "")
+    LLM_BASE_URL = os.environ.get("SYSCHOICE_LLM_BASE_URL", "https://api.openai.com/v1")
+    LLM_MODEL = os.environ.get("SYSCHOICE_LLM_MODEL", "gpt-4o-mini")
+    LLM_TIMEOUT = int(os.environ.get("SYSCHOICE_LLM_TIMEOUT", "45"))

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Cpu, MemoryStick, MonitorSmartphone, Play } from 'lucide-vue-next'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import type { CandidateSummary } from '@/api/types'
+import SystemLogo from '@/components/SystemLogo.vue'
 import { useHardwareProbe } from '@/composables/useHardwareProbe'
 import { t } from '@/i18n'
 import { useAssessmentStore } from '@/stores/assessment'
@@ -10,6 +12,10 @@ import { useAssessmentStore } from '@/stores/assessment'
 const router = useRouter()
 const store = useAssessmentStore()
 const { reading, probing, detect } = useHardwareProbe()
+const hovered = ref<CandidateSummary | null>(null)
+
+const candidates = computed(() => store.catalog?.candidates ?? [])
+const preview = computed(() => hovered.value ?? candidates.value[0] ?? null)
 
 const readings = computed(() => [
   {
@@ -32,15 +38,24 @@ const readings = computed(() => [
   { label: '触控点数', value: String(reading.value.touchPoints ?? 0) },
 ])
 
+// The four families are the shape of the whole answer space, so they get the
+// first real colour on the page.
+const families = [
+  { label: 'Windows', count: 1, color: '#2E7CD6' },
+  { label: 'macOS', count: 1, color: '#8A8A8E' },
+  { label: 'Linux', count: 67, color: '#C4762A' },
+  { label: 'BSD', count: 3, color: '#B03A48' },
+]
+
 const facts = [
   { value: '72', label: '候选系统' },
-  { value: '4', label: '系统族' },
   { value: '28', label: '问卷题目' },
   { value: '9', label: '评估维度' },
 ]
 
 onMounted(() => {
   detect()
+  store.ensureLoaded()
 })
 
 function start() {
@@ -50,6 +65,7 @@ function start() {
 </script>
 
 <template>
+  <div>
   <section class="grid gap-10 py-4 md:grid-cols-[minmax(0,1fr)_360px] md:gap-14">
     <div class="flex flex-col justify-center">
       <h1 class="max-w-[16ch] text-[34px] font-semibold leading-[1.15] sm:text-[42px]">
@@ -68,28 +84,51 @@ function start() {
         <RouterLink to="/stats" class="btn-quiet">{{ t('nav.stats') }}</RouterLink>
       </div>
 
-      <dl class="mt-10 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-line pt-6 sm:grid-cols-4">
+      <dl class="mt-10 grid grid-cols-3 gap-x-6 gap-y-4 border-t border-line pt-6">
         <div v-for="fact in facts" :key="fact.label">
-          <dt class="mono-value text-[22px] font-medium">{{ fact.value }}</dt>
+          <dt class="mono-value text-[24px] font-medium">{{ fact.value }}</dt>
           <dd class="text-[12px] text-graphite">{{ fact.label }}</dd>
         </div>
       </dl>
+
+      <div class="mt-8">
+        <p class="text-[12px] text-graphite">候选范围</p>
+        <div class="mt-2.5 flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-paper-2">
+          <span
+            v-for="family in families"
+            :key="family.label"
+            class="h-full first:rounded-l-full last:rounded-r-full"
+            :style="{ flexGrow: family.count, backgroundColor: family.color }"
+            :title="`${family.label} ${family.count}`"
+          />
+        </div>
+        <ul class="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
+          <li v-for="family in families" :key="family.label" class="flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-sm" :style="{ backgroundColor: family.color }" />
+            <span class="text-[12px]">{{ family.label }}</span>
+            <span class="mono-value text-[12px] text-graphite">{{ family.count }}</span>
+          </li>
+        </ul>
+      </div>
     </div>
 
-    <aside class="border border-line bg-white/60 p-5">
+    <aside class="panel h-fit p-5">
       <div class="flex items-center justify-between">
-        <h2 class="text-[13px] font-semibold">{{ t('start.detected') }}</h2>
+        <h2 class="flex items-center gap-2 text-[13px] font-semibold">
+          <span class="h-2 w-2 rounded-full bg-flux" />
+          {{ t('start.detected') }}
+        </h2>
         <button
           type="button"
           class="mono-value text-[11px] text-graphite underline decoration-dotted hover:text-ink"
           :disabled="probing"
           @click="detect"
         >
-          {{ t('start.recheck') }}
+          {{ probing ? '…' : t('start.recheck') }}
         </button>
       </div>
 
-      <ul class="mt-4">
+      <ul class="mt-3">
         <li
           v-for="row in readings"
           :key="row.label"
@@ -100,7 +139,7 @@ function start() {
             {{ row.label }}
           </span>
           <span
-            class="mono-value max-w-[62%] truncate text-right text-[12px]"
+            class="mono-value max-w-[62%] truncate rounded-sm text-right text-[12px]"
             :title="row.value"
           >
             {{ row.value }}
@@ -108,10 +147,63 @@ function start() {
         </li>
       </ul>
 
-      <p class="mt-4 text-[12px] leading-relaxed text-graphite">
+      <p class="mt-4 border-t border-line pt-3 text-[12px] leading-relaxed text-graphite">
         探测结果只在本机使用。读不到的项会按“未知”处理，不影响继续测试。
       </p>
     </aside>
+  </section>
+
+  <!-- The whole answer space, one tile per system: the page's visual anchor. -->
+  <section v-if="candidates.length" class="mt-14 border-t border-line pt-8">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h2 class="text-[19px] font-semibold">会被比较的全部候选</h2>
+        <p class="mt-1 text-[13px] text-graphite">
+          每个方块是一个候选系统，按系统族着色。指针停在方块上可以看它是什么。
+        </p>
+      </div>
+      <p class="mono-value text-[12px] text-graphite">{{ candidates.length }} 个</p>
+    </div>
+
+    <div class="mt-5 grid grid-cols-[repeat(auto-fill,42px)] gap-2">
+      <button
+        v-for="candidate in candidates"
+        :key="candidate.id"
+        type="button"
+        class="group transition-transform duration-150 hover:z-10 hover:scale-[1.18]"
+        :aria-label="candidate.name"
+        @mouseenter="hovered = candidate"
+        @focus="hovered = candidate"
+        @click="hovered = candidate"
+      >
+        <SystemLogo
+          :id="candidate.id"
+          :color="candidate.color"
+          :monogram="candidate.monogram"
+          :size="42"
+          :radius="7"
+        />
+      </button>
+    </div>
+
+    <div
+      v-if="preview"
+      class="panel mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 p-3"
+      aria-live="polite"
+    >
+      <SystemLogo
+        :id="preview.id"
+        :color="preview.color"
+        :monogram="preview.monogram"
+        :size="34"
+      />
+      <span class="text-[15px] font-semibold">{{ preview.name }}</span>
+      <span class="pill">{{ preview.group }}</span>
+      <span v-if="preview.lineage" class="text-[12px] text-graphite">
+        血统 {{ preview.lineage }}
+      </span>
+      <span class="w-full text-[12px] text-graphite">{{ preview.blurb }}</span>
+    </div>
   </section>
 
   <section v-if="store.history.length" class="mt-12 border-t border-line pt-6">
@@ -120,12 +212,13 @@ function start() {
       <li v-for="entry in store.history" :key="entry.shareCode">
         <RouterLink
           :to="{ name: 'result', params: { code: entry.shareCode } }"
-          class="btn-quiet px-3 py-1.5 text-[12px]"
+          class="panel flex items-center gap-2.5 px-3 py-1.5 text-[12px] transition-transform hover:-translate-y-px"
         >
           <span>{{ entry.topName }}</span>
-          <span class="mono-value text-graphite">{{ entry.match }}%</span>
+          <span class="mono-value text-flux">{{ entry.match }}%</span>
         </RouterLink>
       </li>
     </ul>
   </section>
+  </div>
 </template>

@@ -243,7 +243,7 @@ CANDIDATES = [
         [],
     ),
     _c(
-        "linux-lite", "Linux Lite", "linux", "新手易用", "#3C8C00", "l",
+        "linux-lite", "Linux Lite", "linux", "新手易用", "#3C8C00", "LL",
         (88, 85, 45, 48, 52, 50, 55, 65, 85),
         "Ubuntu LTS",
         ["beginner", "lightweight", "windows-like"],
@@ -253,7 +253,7 @@ CANDIDATES = [
         [],
     ),
     _c(
-        "peppermint", "Peppermint OS", "linux", "新手易用", "#C4102B", "p",
+        "peppermint", "Peppermint OS", "linux", "新手易用", "#C4102B", "PM",
         (84, 82, 48, 48, 52, 58, 62, 65, 82),
         "Debian",
         ["beginner", "lightweight", "web-centric"],
@@ -544,7 +544,7 @@ CANDIDATES = [
         [],
     ),
     _c(
-        "blendos", "blendOS", "linux", "不可变系统", "#E85D26", "b",
+        "blendos", "blendOS", "linux", "不可变系统", "#E85D26", "bO",
         (62, 78, 62, 58, 50, 78, 70, 70, 55),
         "Arch Linux",
         ["immutable", "hybrid", "arch-based"],
@@ -653,7 +653,7 @@ CANDIDATES = [
         list(_SERVER_GATES),
     ),
     _c(
-        "oracle-linux", "Oracle Linux", "linux", "服务器系统", "#F80000", "O",
+        "oracle-linux", "Oracle Linux", "linux", "服务器系统", "#F80000", "OL",
         (58, 94, 30, 40, 45, 78, 50, 75, 60),
         "RHEL",
         ["server", "enterprise", "database"],
@@ -806,7 +806,7 @@ CANDIDATES = [
         [],
     ),
     _c(
-        "antix", "antiX", "linux", "轻量与老硬件", "#8FA36C", "a",
+        "antix", "antiX", "linux", "轻量与老硬件", "#8FA36C", "aX",
         (78, 88, 30, 35, 45, 55, 70, 75, 95),
         "Debian（无 systemd）",
         ["lightweight", "old-hardware", "systemd-free"],
@@ -816,7 +816,7 @@ CANDIDATES = [
         [],
     ),
     _c(
-        "puppy-linux", "Puppy Linux", "linux", "轻量与老硬件", "#E8A33D", "P",
+        "puppy-linux", "Puppy Linux", "linux", "轻量与老硬件", "#E8A33D", "PL",
         (72, 78, 28, 32, 42, 50, 65, 72, 98),
         "独立上游",
         ["lightweight", "old-hardware", "live"],

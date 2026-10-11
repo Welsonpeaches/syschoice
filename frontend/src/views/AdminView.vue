@@ -102,7 +102,7 @@ onMounted(() => {
       </button>
     </div>
 
-    <form v-if="!authorised" class="mt-6 max-w-sm" @submit.prevent="load">
+    <form v-if="!authorised" class="panel mt-6 max-w-sm p-5" @submit.prevent="load">
       <label class="block">
         <span class="text-[12px] text-graphite">{{ t('admin.token') }}</span>
         <input v-model="token" type="password" class="field-input mt-1.5" autocomplete="off" />
@@ -115,8 +115,10 @@ onMounted(() => {
     </form>
 
     <template v-else-if="data">
-      <div class="mt-6 flex flex-wrap items-center gap-3">
-        <label class="flex min-w-[240px] flex-1 items-center gap-2 border border-line-strong bg-white px-3 py-2">
+      <div class="panel mt-6 flex flex-wrap items-center gap-3 p-3">
+        <label
+          class="flex min-w-[240px] flex-1 items-center gap-2 rounded-card border border-line-strong bg-surface px-3 py-2 transition-shadow focus-within:border-flux focus-within:shadow-[0_0_0_3px_var(--color-flux-soft)]"
+        >
           <Search :size="15" class="text-graphite" />
           <input
             v-model="query"
@@ -136,10 +138,10 @@ onMounted(() => {
         {{ data.total }} 条记录 · {{ t('admin.page', { page: data.page }) }} / {{ totalPages }}
       </p>
 
-      <div class="mt-3 overflow-x-auto border border-line">
+      <div class="panel mt-3 overflow-x-auto">
         <table class="w-full min-w-[720px] border-collapse text-[13px]">
           <thead>
-            <tr class="border-b border-line bg-paper-2 text-left text-[12px] text-graphite">
+            <tr class="border-b border-line bg-surface-2 text-left text-[12px] text-graphite">
               <th class="px-3 py-2 font-medium">分享码</th>
               <th class="px-3 py-2 font-medium">时间</th>
               <th class="px-3 py-2 font-medium">首选系统</th>
@@ -148,8 +150,12 @@ onMounted(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in data.items" :key="row.id" class="border-b border-line last:border-b-0">
-              <td class="mono-value px-3 py-2">{{ row.share_code }}</td>
+            <tr
+              v-for="row in data.items"
+              :key="row.id"
+              class="border-b border-line transition-colors last:border-b-0 hover:bg-surface-2"
+            >
+              <td class="mono-value px-3 py-2 text-flux-deep">{{ row.share_code }}</td>
               <td class="mono-value px-3 py-2 text-graphite">{{ shortDate(row.created_at) }}</td>
               <td class="px-3 py-2">{{ row.top1_name ?? '-' }}</td>
               <td class="px-3 py-2 text-graphite">{{ row.top1_family ?? '-' }}</td>

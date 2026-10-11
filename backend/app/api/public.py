@@ -21,7 +21,15 @@ from ..data.dimensions import (
 from ..data.questions import QUESTIONS, SECTIONS
 from ..data.scenarios import SCENARIO_QUESTIONS
 from ..data.software import CATEGORIES, SOFTWARE
-from ..db import get_by_share_code, insert_session, stats
+from ..db import (
+    get_by_share_code,
+    get_feedback,
+    insert_feedback,
+    insert_session,
+    set_insight,
+    stats,
+)
+from ..services import llm
 from ..services.scoring import build_result
 
 public_bp = Blueprint("public", __name__, url_prefix="/api")
@@ -65,6 +73,7 @@ def health():
         "status": "ok",
         "quizVersion": Config.QUIZ_VERSION,
         "candidates": len(CANDIDATES),
+        "llmEnabled": llm.is_enabled(),
     })
 
 
@@ -201,6 +210,12 @@ def assess():
         "shareCode": payload["share_code"],
         "createdAt": created_at,
         "quizVersion": Config.QUIZ_VERSION,
+        # The client renders the optional commentary panel straight after
+        # submitting, so the same flags the result endpoint exposes are needed.
+        "llmEnabled": llm.is_enabled(),
+        "insight": None,
+        "insightModel": None,
+        "feedback": None,
         **result,
     })
 
@@ -216,8 +231,76 @@ def result_by_code(code):
         "shareCode": row["share_code"],
         "createdAt": row["created_at"],
         "quizVersion": row["quiz_version"],
+        "llmEnabled": llm.is_enabled(),
+        "insight": row["insight_text"],
+        "insightModel": row["insight_model"],
+        "feedback": get_feedback(code),
         **result,
     })
+
+
+@public_bp.post("/result/<code>/insight")
+def result_insight(code):
+    """Generate (and cache) the optional LLM commentary for one result."""
+    row = get_by_share_code(code)
+    if not row:
+        return jsonify({"error": "没有找到这份结果。"}), 404
+    if not llm.is_enabled():
+        return jsonify({"error": "服务端未配置 LLM API Key，本功能未启用。"}), 503
+    if row["insight_text"]:
+        return jsonify({
+            "insight": row["insight_text"],
+            "model": row["insight_model"],
+            "cached": True,
+        })
+
+    try:
+        text = llm.generate_insight(json.loads(row["result_json"]))
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 502
+
+    model = current_app.config.get("LLM_MODEL", Config.LLM_MODEL)
+    set_insight(code, text, model)
+    return jsonify({"insight": text, "model": model, "cached": False})
+
+
+@public_bp.post("/result/<code>/feedback")
+def result_feedback(code):
+    """Record which system the person actually went with, and how it went."""
+    row = get_by_share_code(code)
+    if not row:
+        return jsonify({"error": "没有找到这份结果。"}), 404
+
+    body = request.get_json(silent=True) or {}
+    chosen_id = body.get("chosenId")
+    chosen_id = chosen_id if isinstance(chosen_id, str) and chosen_id else None
+
+    candidates = {c["id"]: c["name"] for c in CANDIDATES}
+    if chosen_id and chosen_id not in candidates:
+        return jsonify({"error": "未知的系统标识。"}), 400
+
+    satisfaction = body.get("satisfaction")
+    if satisfaction is not None:
+        if not isinstance(satisfaction, int) or not 1 <= satisfaction <= 5:
+            return jsonify({"error": "满意度需要是 1 到 5 的整数。"}), 400
+
+    note = body.get("note")
+    note = note.strip()[:500] if isinstance(note, str) else None
+
+    if not chosen_id and satisfaction is None and not note:
+        return jsonify({"error": "请至少填写一项反馈。"}), 400
+
+    insert_feedback({
+        "id": secrets.token_hex(8),
+        "share_code": code,
+        "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "chosen_id": chosen_id,
+        "chosen_name": candidates.get(chosen_id) if chosen_id else None,
+        "satisfaction": satisfaction,
+        "note": note,
+        "ip_hash": _hash_ip(_client_ip()),
+    })
+    return jsonify({"ok": True, "feedback": get_feedback(code)})
 
 
 @public_bp.get("/stats")

@@ -2,9 +2,20 @@ import { expect, test, type Page } from '@playwright/test'
 
 const SHOTS = process.env.SHOT_DIR ?? '/tmp/syschoice-shots'
 
+/**
+ * Route changes animate the incoming view, and the outgoing one stays mounted
+ * for a frame. Waiting for exactly one view guarantees we are answering the
+ * step we think we are.
+ */
+async function waitForView(page: Page, name: string) {
+  await expect(page.locator(`[data-view="${name}"]`)).toBeVisible()
+  await expect(page.locator('[data-view]')).toHaveCount(1)
+}
+
 /** Answer every question in the current section by picking the first option. */
 async function answerSection(page: Page) {
   const articles = page.locator('article')
+  await expect(articles.first()).toBeVisible()
   const count = await articles.count()
   for (let index = 0; index < count; index += 1) {
     await articles.nth(index).locator('button').first().click()
@@ -15,6 +26,7 @@ async function completeQuiz(page: Page) {
   for (let section = 0; section < 5; section += 1) {
     await answerSection(page)
     await page.getByRole('button', { name: '下一步', exact: true }).click()
+    await page.waitForTimeout(150)
   }
 }
 
@@ -29,7 +41,8 @@ test('start page renders the probe readout and no marketing filler', async ({ pa
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page.getByText('当前设备探测结果')).toBeVisible()
-  await expect(page.getByText('候选系统')).toBeVisible()
+  await expect(page.getByText('候选系统', { exact: true })).toBeVisible()
+  await expect(page.getByText('会被比较的全部候选')).toBeVisible()
   await expectNoHorizontalOverflow(page)
   await page.screenshot({ path: `${SHOTS}/start.png`, fullPage: true })
 })
@@ -39,15 +52,18 @@ test('completes the full assessment and produces a shareable result', async ({ p
   await page.getByRole('button', { name: '开始检测' }).first().click()
 
   await expect(page).toHaveURL(/\/test\/hardware/)
+  await waitForView(page, 'hardware')
   await page.screenshot({ path: `${SHOTS}/hardware.png`, fullPage: true })
   await page.getByRole('button', { name: '下一步' }).click()
 
   await expect(page).toHaveURL(/\/test\/quiz/)
+  await waitForView(page, 'quiz')
   await page.screenshot({ path: `${SHOTS}/quiz.png`, fullPage: true })
   await completeQuiz(page)
 
   // --- interactive lab: CLI, software self-check, scenarios ---
   await expect(page).toHaveURL(/\/test\/lab/)
+  await waitForView(page, 'lab')
   await answerSection(page)
   await page.getByRole('button', { name: '软件自检' }).click()
   await page.getByRole('button', { name: /Steam 本体/ }).click()
@@ -86,6 +102,13 @@ test('completes the full assessment and produces a shareable result', async ({ p
   await fresh.goto(shareUrl)
   await expect(fresh.getByRole('heading', { level: 1 })).toHaveText(championName)
   await fresh.close()
+
+  // --- feedback is recorded and confirmed in place ---
+  await page.getByLabel('最终安装的系统').selectOption({ index: 1 })
+  await page.getByRole('button', { name: '4', exact: true }).click()
+  await page.getByRole('button', { name: '提交反馈' }).click()
+  await expect(page.getByText('已记录，谢谢。你的选择会用来改进打分。')).toBeVisible()
+  await page.screenshot({ path: `${SHOTS}/result-feedback.png`, fullPage: true })
 })
 
 test('stats page reports the recorded session', async ({ page }) => {

@@ -17,7 +17,7 @@ const steps = [
 const currentIndex = computed(() => steps.findIndex((step) => step.name === route.name))
 
 function markerClass(index: number) {
-  if (index === currentIndex.value) return 'border-flux bg-flux text-white'
+  if (index === currentIndex.value) return 'border-flux bg-flux text-white shadow-panel'
   if (index < currentIndex.value) return 'border-flux text-flux'
   return 'border-line-strong text-graphite'
 }
@@ -25,7 +25,7 @@ function markerClass(index: number) {
 function labelClass(index: number) {
   if (index === currentIndex.value) return 'font-semibold text-ink'
   if (index < currentIndex.value) return 'text-ink'
-  return 'text-graphite'
+  return 'text-mist'
 }
 
 function go(step: string, index: number) {
@@ -38,16 +38,18 @@ function go(step: string, index: number) {
   <!-- The rail really is a sequence, so the numbered markers carry meaning. -->
   <nav aria-label="测试步骤">
     <ol class="hidden md:block">
-      <li
-        v-for="(step, index) in steps"
-        :key="step.name"
-        class="border-t border-line py-3.5"
-      >
+      <li v-for="(step, index) in steps" :key="step.name" class="py-1">
         <button
           type="button"
-          class="flex w-full items-center gap-3 text-left"
+          class="flex w-full items-center gap-3 rounded-card px-2.5 py-2.5 text-left transition-colors"
           :disabled="index >= currentIndex"
-          :class="index >= currentIndex ? 'cursor-default' : 'cursor-pointer'"
+          :class="
+            index === currentIndex
+              ? 'bg-flux-soft cursor-default'
+              : index < currentIndex
+                ? 'cursor-pointer hover:bg-surface-2'
+                : 'cursor-default'
+          "
           @click="go(step.name, index)"
         >
           <span
